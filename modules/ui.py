@@ -251,8 +251,13 @@ def create_output_panel(tabname, outdir, toprow=None):
 
 def ordered_ui_categories():
     user_order = {x.strip(): i * 2 + 1 for i, x in enumerate(shared.opts.ui_reorder_list)}
+    categories = list(shared_items.ui_reorder_categories())
 
-    for _, category in sorted(enumerate(shared_items.ui_reorder_categories()), key=lambda x: user_order.get(x[1], x[0] * 2 + 0)):
+    if shared.opts.simple_ui_mode:
+        simple_list = ["prompt", "image", "sampler", "dimensions", "cfg", "seed", "batch"]
+        categories = [c for c in categories if c in simple_list]
+
+    for _, category in sorted(enumerate(categories), key=lambda x: user_order.get(x[1], x[0] * 2 + 0)):
         yield category
 
 
