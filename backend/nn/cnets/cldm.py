@@ -70,7 +70,10 @@ class ControlNet(nn.Module):
             assert len(disable_self_attentions) == len(channel_mult)
         if num_attention_blocks is not None:
             assert len(num_attention_blocks) == len(self.num_res_blocks)
-            assert all(map(lambda i: self.num_res_blocks[i] >= num_attention_blocks[i], range(len(num_attention_blocks))))
+            assert all(
+                self.num_res_blocks[i] >= num_attention_blocks[i]
+                for i in range(len(num_attention_blocks))
+            )
 
         transformer_depth = transformer_depth[:]
 
@@ -249,7 +252,6 @@ class ControlNet(nn.Module):
 
         outs = []
 
-        hs = []
         if self.num_classes is not None:
             assert y.shape[0] == x.shape[0]
             emb = emb + self.label_emb(y)

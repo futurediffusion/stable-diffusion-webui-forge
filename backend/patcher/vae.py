@@ -10,14 +10,28 @@ from backend.patcher.base import ModelPatcher
 @torch.inference_mode()
 def tiled_scale_multidim(samples, function, tile=(64, 64), overlap=8, upscale_amount=4, out_channels=3, output_device="cpu"):
     dims = len(tile)
-    output = torch.empty([samples.shape[0], out_channels] + list(map(lambda a: round(a * upscale_amount), samples.shape[2:])), device=output_device)
+    output = torch.empty(
+        [samples.shape[0], out_channels]
+        + [round(a * upscale_amount) for a in samples.shape[2:]],
+        device=output_device,
+    )
 
     for b in trange(samples.shape[0]):
         s = samples[b:b + 1]
-        out = torch.zeros([s.shape[0], out_channels] + list(map(lambda a: round(a * upscale_amount), s.shape[2:])), device=output_device)
-        out_div = torch.zeros([s.shape[0], out_channels] + list(map(lambda a: round(a * upscale_amount), s.shape[2:])), device=output_device)
+        out = torch.zeros(
+            [s.shape[0], out_channels]
+            + [round(a * upscale_amount) for a in s.shape[2:]],
+            device=output_device,
+        )
+        out_div = torch.zeros(
+            [s.shape[0], out_channels]
+            + [round(a * upscale_amount) for a in s.shape[2:]],
+            device=output_device,
+        )
 
-        for it in itertools.product(*map(lambda a: range(0, a[0], a[1] - overlap), zip(s.shape[2:], tile))):
+        for it in itertools.product(
+            *(range(0, a[0], a[1] - overlap) for a in zip(s.shape[2:], tile))
+        ):
             s_in = s
             upscaled = []
 
@@ -140,7 +154,7 @@ class VAE:
             for x in range(0, samples_in.shape[0], batch_number):
                 samples = samples_in[x:x + batch_number].to(self.vae_dtype).to(self.device)
                 pixel_samples[x:x + batch_number] = torch.clamp((self.first_stage_model.decode(samples).to(self.output_device).float() + 1.0) / 2.0, min=0.0, max=1.0)
-        except memory_management.OOM_EXCEPTION as e:
+        except memory_management.OOM_EXCEPTION:
             print("Warning: Ran out of memory when regular VAE decoding, retrying with tiled VAE decoding.")
             pixel_samples = self.decode_tiled_(samples_in)
 
@@ -177,7 +191,7 @@ class VAE:
                 pixels_in = (2. * pixel_samples[x:x + batch_number] - 1.).to(self.vae_dtype).to(self.device)
                 samples[x:x + batch_number] = self.first_stage_model.encode(pixels_in, regulation).to(self.output_device).float()
 
-        except memory_management.OOM_EXCEPTION as e:
+        except memory_management.OOM_EXCEPTION:
             print("Warning: Ran out of memory when regular VAE encoding, retrying with tiled VAE encoding.")
             samples = self.encode_tiled_(pixel_samples)
 

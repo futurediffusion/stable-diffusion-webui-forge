@@ -1,24 +1,18 @@
+
 [tool.ruff]
 
 target-version = "py39"
+exclude = [
+        "extensions",
+        "extensions-disabled",
+        "modules_forge",
+        "modules",
+        "ldm_patched",
+        "extensions-builtin",
+]
 
 [tool.ruff.lint]
-
-extend-select = [
-  "B",
-  "C",
-  "I",
-  "W",
-]
-
-exclude = [
-	"extensions",
-	"extensions-disabled",
-	"modules_forge",
-	"modules",
-	"ldm_patched",
-	"extensions-builtin",
-]
+select = ["F841", "B006", "C417"]
 
 ignore = [
 	"E501", # Line too long
