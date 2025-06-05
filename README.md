@@ -212,6 +212,8 @@ See also [Forge's Unet Implementation](https://github.com/lllyasviel/stable-diff
 
 When several GPUs are available Forge will automatically load models on the device with the most free memory. Use the command line option `--gpu-device-id` or the `CUDA_VISIBLE_DEVICES` environment variable to limit the GPUs visible to Forge. Functions such as `load_models_gpu()` also accept a `device` argument to manually choose the target GPU.
 
+To inspect which GPUs are visible to Forge from within Python you can call `backend.memory_management.available_devices()`.
+
 # Under Construction
 
 WebUI Forge is now under some constructions, and docs / UI / functionality may change with updates.
