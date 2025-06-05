@@ -142,7 +142,7 @@ class Keys:
         BOS_ID               = "tokenizer.ggml.bos_token_id"
         EOS_ID               = "tokenizer.ggml.eos_token_id"
         UNK_ID               = "tokenizer.ggml.unknown_token_id"
-        SEP_ID               = "tokenizer.ggml.seperator_token_id"
+        SEP_ID               = "tokenizer.ggml.separator_token_id"
         PAD_ID               = "tokenizer.ggml.padding_token_id"
         CLS_ID               = "tokenizer.ggml.cls_token_id"
         MASK_ID              = "tokenizer.ggml.mask_token_id"
