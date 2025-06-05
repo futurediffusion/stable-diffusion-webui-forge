@@ -241,6 +241,14 @@ def load_file_from_url(
 
     cached_file = os.path.abspath(os.path.join(model_dir, file_name))
 
+    if not re_download:
+        if os.path.exists(cached_file):
+            if hash_prefix and not compare_sha256(cached_file, hash_prefix):
+                print(f"Hash mismatch for {cached_file}. Re-downloading...")
+                re_download = True
+            else:
+                return cached_file
+
     if re_download or not os.path.exists(cached_file):
         os.makedirs(model_dir, exist_ok=True)
         temp_file = os.path.join(model_dir, f"{file_name}.tmp")
