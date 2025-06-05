@@ -6,6 +6,23 @@ from modules import errors, scripts
 localizations = {}
 
 
+def detect_default_localization() -> str:
+    """Detect preferred localization from environment variables."""
+    lang = os.getenv("WEBUI_LANG") or os.getenv("LANG") or ""
+    lang = lang.split('.')[0]
+    if not lang:
+        return "None"
+
+    if lang in localizations:
+        return lang
+
+    base = lang.split('_')[0]
+    if base in localizations:
+        return base
+
+    return "None"
+
+
 def list_localizations(dirname):
     localizations.clear()
 
