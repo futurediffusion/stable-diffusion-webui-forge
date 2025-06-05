@@ -57,7 +57,11 @@ def state_dict_prefix_replace(state_dict, replace_prefix, filter_keys=False):
     else:
         out = state_dict
     for rp in replace_prefix:
-        replace = list(map(lambda a: (a, "{}{}".format(replace_prefix[rp], a[len(rp):])), filter(lambda a: a.startswith(rp), state_dict.keys())))
+        replace = [
+            (a, f"{replace_prefix[rp]}{a[len(rp):]}")
+            for a in state_dict.keys()
+            if a.startswith(rp)
+        ]
         for x in replace:
             w = state_dict.pop(x[0])
             out[x[1]] = w
@@ -686,14 +690,28 @@ def get_tiled_scale_steps(width, height, tile_x, tile_y, overlap):
 @torch.inference_mode()
 def tiled_scale_multidim(samples, function, tile=(64, 64), overlap = 8, upscale_amount = 4, out_channels = 3, output_device="cpu", pbar = None):
     dims = len(tile)
-    output = torch.empty([samples.shape[0], out_channels] + list(map(lambda a: round(a * upscale_amount), samples.shape[2:])), device=output_device)
+    output = torch.empty(
+        [samples.shape[0], out_channels]
+        + [round(a * upscale_amount) for a in samples.shape[2:]],
+        device=output_device,
+    )
 
     for b in range(samples.shape[0]):
         s = samples[b:b+1]
-        out = torch.zeros([s.shape[0], out_channels] + list(map(lambda a: round(a * upscale_amount), s.shape[2:])), device=output_device)
-        out_div = torch.zeros([s.shape[0], out_channels] + list(map(lambda a: round(a * upscale_amount), s.shape[2:])), device=output_device)
+        out = torch.zeros(
+            [s.shape[0], out_channels]
+            + [round(a * upscale_amount) for a in s.shape[2:]],
+            device=output_device,
+        )
+        out_div = torch.zeros(
+            [s.shape[0], out_channels]
+            + [round(a * upscale_amount) for a in s.shape[2:]],
+            device=output_device,
+        )
 
-        for it in itertools.product(*map(lambda a: range(0, a[0], a[1] - overlap), zip(s.shape[2:], tile))):
+        for it in itertools.product(
+            *(range(0, a[0], a[1] - overlap) for a in zip(s.shape[2:], tile))
+        ):
             s_in = s
             upscaled = []
 

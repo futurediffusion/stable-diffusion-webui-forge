@@ -25,7 +25,9 @@ def inner_str(k, prefix="", suffix=""):
     return k[len(prefix):-len(suffix)]
 
 
-def model_lora_keys_clip(model, key_map={}):
+def model_lora_keys_clip(model, key_map=None):
+    if key_map is None:
+        key_map = {}
     model_keys, key_maps = get_function('model_lora_keys_clip')(model, key_map)
 
     for model_key in model_keys:
@@ -40,7 +42,9 @@ def model_lora_keys_clip(model, key_map={}):
     return key_maps
 
 
-def model_lora_keys_unet(model, key_map={}):
+def model_lora_keys_unet(model, key_map=None):
+    if key_map is None:
+        key_map = {}
     model_keys, key_maps = get_function('model_lora_keys_unet')(model, key_map)
 
     # TODO: OFT

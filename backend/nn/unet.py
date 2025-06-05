@@ -72,7 +72,9 @@ class TimestepBlock(nn.Module):
 
 
 class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
-    def forward(self, x, emb, context=None, transformer_options={}, output_shape=None):
+    def forward(self, x, emb, context=None, transformer_options=None, output_shape=None):
+        if transformer_options is None:
+            transformer_options = {}
         block_inner_modifiers = transformer_options.get("block_inner_modifiers", [])
         for layer_index, layer in enumerate(self):
             for modifier in block_inner_modifiers:
@@ -142,7 +144,9 @@ class CrossAttention(nn.Module):
         self.to_v = nn.Linear(context_dim, inner_dim, bias=False)
         self.to_out = nn.Sequential(nn.Linear(inner_dim, query_dim), nn.Dropout(dropout))
 
-    def forward(self, x, context=None, value=None, mask=None, transformer_options={}):
+    def forward(self, x, context=None, value=None, mask=None, transformer_options=None):
+        if transformer_options is None:
+            transformer_options = {}
         q = self.to_q(x)
         context = default(context, x)
         k = self.to_k(context)
@@ -177,10 +181,14 @@ class BasicTransformerBlock(nn.Module):
         self.n_heads = n_heads
         self.d_head = d_head
 
-    def forward(self, x, context=None, transformer_options={}):
+    def forward(self, x, context=None, transformer_options=None):
+        if transformer_options is None:
+            transformer_options = {}
         return checkpoint(self._forward, (x, context, transformer_options), None, self.checkpoint)
 
-    def _forward(self, x, context=None, transformer_options={}):
+    def _forward(self, x, context=None, transformer_options=None):
+        if transformer_options is None:
+            transformer_options = {}
         # Stolen from ComfyUI with some modifications
         extra_options = {}
         block = transformer_options.get("block", None)
@@ -305,7 +313,9 @@ class SpatialTransformer(nn.Module):
             self.proj_out = nn.Linear(in_channels, inner_dim)
         self.use_linear = use_linear
 
-    def forward(self, x, context=None, transformer_options={}):
+    def forward(self, x, context=None, transformer_options=None):
+        if transformer_options is None:
+            transformer_options = {}
         if not isinstance(context, list):
             context = [context] * len(self.transformer_blocks)
         b, c, h, w = x.shape
@@ -427,10 +437,14 @@ class ResBlock(TimestepBlock):
         else:
             self.skip_connection = conv_nd(dims, channels, self.out_channels, 1)
 
-    def forward(self, x, emb, transformer_options={}):
+    def forward(self, x, emb, transformer_options=None):
+        if transformer_options is None:
+            transformer_options = {}
         return checkpoint(self._forward, (x, emb, transformer_options), None, self.use_checkpoint)
 
-    def _forward(self, x, emb, transformer_options={}):
+    def _forward(self, x, emb, transformer_options=None):
+        if transformer_options is None:
+            transformer_options = {}
         if self.updown:
             in_rest, in_conv = self.in_layers[:-1], self.in_layers[-1]
             if "group_norm_wrapper" in transformer_options:
@@ -693,7 +707,9 @@ class IntegratedUNet2DConditionModel(nn.Module, ConfigMixin):
             conv_nd(dims, model_channels, out_channels, 3, padding=1),
         )
 
-    def forward(self, x, timesteps=None, context=None, y=None, control=None, transformer_options={}, **kwargs):
+    def forward(self, x, timesteps=None, context=None, y=None, control=None, transformer_options=None, **kwargs):
+        if transformer_options is None:
+            transformer_options = {}
         transformer_options["original_shape"] = list(x.shape)
         transformer_options["transformer_index"] = 0
         transformer_patches = transformer_options.get("patches", {})

@@ -15,7 +15,9 @@ from modules.shared import opts
 
 
 ##  patch SD3 Class in huggingface_guess.model_list
-def SD3_clip_target(self, state_dict={}):
+def SD3_clip_target(self, state_dict=None):
+        if state_dict is None:
+            state_dict = {}
         return {'clip_l': 'text_encoder', 'clip_g': 'text_encoder_2', 't5xxl': 'text_encoder_3'}
 
 model_list.SD3.unet_target = 'transformer'

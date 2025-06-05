@@ -22,7 +22,9 @@ class KModel(torch.nn.Module):
         else:
             self.predictor = k_predictor
 
-    def apply_model(self, x, t, c_concat=None, c_crossattn=None, control=None, transformer_options={}, **kwargs):
+    def apply_model(self, x, t, c_concat=None, c_crossattn=None, control=None, transformer_options=None, **kwargs):
+        if transformer_options is None:
+            transformer_options = {}
         sigma = t
         xc = self.predictor.calculate_input(sigma, x)
         if c_concat is not None:

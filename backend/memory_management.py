@@ -391,7 +391,9 @@ def module_size(module, exclude_device=None, include_device=None, return_split=F
     return module_mem
 
 
-def module_move(module, device, recursive=True, excluded_pattens=[]):
+def module_move(module, device, recursive=True, excluded_pattens=None):
+    if excluded_pattens is None:
+        excluded_pattens = []
     if recursive:
         return module.to(device=device)
 
@@ -560,7 +562,9 @@ def unload_model_clones(model):
         current_loaded_models.pop(i).model_unload(avoid_model_moving=True)
 
 
-def free_memory(memory_required, device, keep_loaded=[], free_all=False):
+def free_memory(memory_required, device, keep_loaded=None, free_all=False):
+    if keep_loaded is None:
+        keep_loaded = []
     # this check fully unloads any 'abandoned' models
     for i in range(len(current_loaded_models) - 1, -1, -1):
         if sys.getrefcount(current_loaded_models[i].model) <= 2:
@@ -632,7 +636,7 @@ def load_models_gpu(models, memory_required=0, hard_memory_preservation=0):
             models_to_load.append(loaded_model)
 
     if len(models_to_load) == 0:
-        devs = set(map(lambda a: a.device, models_already_loaded))
+        devs = {m.device for m in models_already_loaded}
         for d in devs:
             if d != torch.device("cpu"):
                 free_memory(memory_to_free, d, models_already_loaded)
@@ -748,7 +752,9 @@ def unet_inital_load_device(parameters, dtype):
         return cpu_dev
 
 
-def unet_dtype(device=None, model_params=0, supported_dtypes=[torch.float16, torch.bfloat16, torch.float32]):
+def unet_dtype(device=None, model_params=0, supported_dtypes=None):
+    if supported_dtypes is None:
+        supported_dtypes = [torch.float16, torch.bfloat16, torch.float32]
     if args.unet_in_bf16:
         return torch.bfloat16
 
@@ -772,7 +778,9 @@ def unet_dtype(device=None, model_params=0, supported_dtypes=[torch.float16, tor
     return torch.float32
 
 
-def get_computation_dtype(inference_device, parameters=0, supported_dtypes=[torch.float16, torch.bfloat16, torch.float32]):
+def get_computation_dtype(inference_device, parameters=0, supported_dtypes=None):
+    if supported_dtypes is None:
+        supported_dtypes = [torch.float16, torch.bfloat16, torch.float32]
     for candidate in supported_dtypes:
         if candidate == torch.float16:
             if should_use_fp16(inference_device, model_params=parameters, prioritize_performance=True, manual_cast=False):
@@ -839,7 +847,9 @@ def vae_offload_device():
         return torch.device("cpu")
 
 
-def vae_dtype(device=None, allowed_dtypes=[]):
+def vae_dtype(device=None, allowed_dtypes=None):
+    if allowed_dtypes is None:
+        allowed_dtypes = []
     global VAE_DTYPES
     if args.vae_in_fp16:
         return torch.float16

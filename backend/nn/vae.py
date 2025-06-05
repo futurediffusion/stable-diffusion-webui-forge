@@ -42,7 +42,7 @@ class Upsample(nn.Module):
     def forward(self, x):
         try:
             x = torch.nn.functional.interpolate(x, scale_factor=2.0, mode="nearest")
-        except Exception as e:
+        except Exception:
             b, c, h, w = x.shape
             out = torch.empty((b, c, h * 2, w * 2), dtype=x.dtype, layout=x.layout, device=x.device)
             split = 8

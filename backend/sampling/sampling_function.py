@@ -106,10 +106,6 @@ def can_concat_cond(c1, c2):
 
 
 def cond_cat(c_list):
-    c_crossattn = []
-    c_concat = []
-    c_adm = []
-    crossattn_max_len = 0
 
     temp = {}
     for x in c_list:
@@ -289,7 +285,9 @@ def calc_cond_uncond_batch(model, cond, uncond, x_in, timestep, model_options):
     return out_cond, out_uncond
 
 
-def sampling_function_inner(model, x, timestep, uncond, cond, cond_scale, model_options={}, seed=None, return_full=False):
+def sampling_function_inner(model, x, timestep, uncond, cond, cond_scale, model_options=None, seed=None, return_full=False):
+    if model_options is None:
+        model_options = {}
     edit_strength = sum((item['strength'] if 'strength' in item else 1) for item in cond)
 
     if math.isclose(cond_scale, 1.0) and model_options.get("disable_cfg1_optimization", False) == False:

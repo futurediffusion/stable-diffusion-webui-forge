@@ -1,7 +1,9 @@
 import torch
 
 
-def load_state_dict(model, sd, ignore_errors=[], log_name=None, ignore_start=None):
+def load_state_dict(model, sd, ignore_errors=None, log_name=None, ignore_start=None):
+    if ignore_errors is None:
+        ignore_errors = []
     missing, unexpected = model.load_state_dict(sd, strict=False)
     missing = [x for x in missing if x not in ignore_errors]
     unexpected = [x for x in unexpected if x not in ignore_errors]
@@ -94,7 +96,11 @@ def state_dict_prefix_replace(state_dict, replace_prefix, filter_keys=False):
     else:
         out = state_dict
     for rp in replace_prefix:
-        replace = list(map(lambda a: (a, "{}{}".format(replace_prefix[rp], a[len(rp):])), filter(lambda a: a.startswith(rp), state_dict.keys())))
+        replace = [
+            (a, f"{replace_prefix[rp]}{a[len(rp):]}")
+            for a in state_dict.keys()
+            if a.startswith(rp)
+        ]
         for x in replace:
             w = state_dict.pop(x[0])
             out[x[1]] = w

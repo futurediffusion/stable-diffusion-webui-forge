@@ -212,7 +212,9 @@ def load_lora(lora, to_load):
     return patch_dict, remaining_dict
 
 
-def model_lora_keys_clip(model, key_map={}):
+def model_lora_keys_clip(model, key_map=None):
+    if key_map is None:
+        key_map = {}
     sdk = model.state_dict().keys()
 
     text_model_lora_key = "lora_te_text_model_encoder_layers_{}_{}"
@@ -283,7 +285,9 @@ def model_lora_keys_clip(model, key_map={}):
     return sdk, key_map
 
 
-def model_lora_keys_unet(model, key_map={}):
+def model_lora_keys_unet(model, key_map=None):
+    if key_map is None:
+        key_map = {}
     sd = model.state_dict()
     sdk = sd.keys()
 

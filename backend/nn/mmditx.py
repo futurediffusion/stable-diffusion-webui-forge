@@ -18,7 +18,10 @@ def attention(q, k, v, heads, mask=None):
     """Convenience wrapper around a basic attention operation"""
     b, _, dim_head = q.shape
     dim_head //= heads
-    q, k, v = map(lambda t: t.view(b, -1, heads, dim_head).transpose(1, 2), (q, k, v))
+    q, k, v = (
+        t.view(b, -1, heads, dim_head).transpose(1, 2)
+        for t in (q, k, v)
+    )
     out = torch.nn.functional.scaled_dot_product_attention(
         q, k, v, attn_mask=mask, dropout_p=0.0, is_causal=False
     )
@@ -760,7 +763,7 @@ class MMDiTX(nn.Module):
         pos_embed_max_size: Optional[int] = None,
         num_patches=None,
         qk_norm: Optional[str] = None,
-        x_block_self_attn_layers: Optional[List[int]] = [],
+        x_block_self_attn_layers: Optional[List[int]] = None,
         qkv_bias: bool = True,
         dtype=None,
         device=None,
@@ -786,6 +789,8 @@ class MMDiTX(nn.Module):
         self.pos_embed_scaling_factor = pos_embed_scaling_factor
         self.pos_embed_offset = pos_embed_offset
         self.pos_embed_max_size = int(pos_embed_max_size)
+        if x_block_self_attn_layers is None:
+            x_block_self_attn_layers = []
         self.x_block_self_attn_layers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] if self.pos_embed_max_size == 384 else x_block_self_attn_layers
 
         # apply magic --> this defines a head_size of 64
@@ -910,9 +915,11 @@ class MMDiTX(nn.Module):
         x: torch.Tensor,
         c_mod: torch.Tensor,
         context: Optional[torch.Tensor] = None,
-        skip_layers: Optional[List] = [],
+        skip_layers: Optional[List] = None,
         controlnet_hidden_states: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
+        if skip_layers is None:
+            skip_layers = []
         if self.register_length > 0:
             context = torch.cat(
                 (
@@ -943,7 +950,7 @@ class MMDiTX(nn.Module):
         t: torch.Tensor,
         y: Optional[torch.Tensor] = None,
         context: Optional[torch.Tensor] = None,
-        control=None, transformer_options={}, **kwargs) -> torch.Tensor:
+        control=None, transformer_options=None, **kwargs) -> torch.Tensor:
         """
         Forward pass of DiT.
         x: (N, C, H, W) tensor of spatial inputs (images or latent representations of images)
@@ -951,6 +958,8 @@ class MMDiTX(nn.Module):
         y: (N,) tensor of class labels
         """
 
+        if transformer_options is None:
+            transformer_options = {}
         skip_layers = transformer_options.get("skip_layers", [])
 
         hw = x.shape[-2:]
