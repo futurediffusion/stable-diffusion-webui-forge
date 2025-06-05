@@ -76,6 +76,7 @@ class ProgressResponse(BaseModel):
 
 def setup_progress_api(app):
     app.add_api_route("/internal/pending-tasks", get_pending_tasks, methods=["GET"])
+    app.add_api_route("/internal/model-cache-status", model_cache_status, methods=["GET"])
     return app.add_api_route("/internal/progress", progressapi, methods=["POST"], response_model=ProgressResponse)
 
 
@@ -140,6 +141,11 @@ def progressapi(req: ProgressRequest):
                 id_live_preview = shared.state.id_live_preview
 
     return ProgressResponse(active=active, queued=queued, completed=completed, progress=progress, eta=eta, live_preview=live_preview, id_live_preview=id_live_preview, textinfo=shared.state.textinfo)
+
+
+def model_cache_status():
+    from backend import model_cache
+    return {"status": model_cache.get_status()}
 
 
 def restore_progress(id_task):

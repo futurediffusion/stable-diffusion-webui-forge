@@ -1,5 +1,5 @@
 import torch
-from backend import operations, memory_management
+from backend import operations, memory_management, model_cache
 from backend.patcher.base import ModelPatcher
 
 from transformers import modeling_utils
@@ -38,6 +38,7 @@ class DiffusersModelPatcher:
             offload_device=offload_device)
 
     def prepare_memory_before_sampling(self, batchsize, latent_width, latent_height):
+        model_cache.prefetch_model(self.patcher)
         area = 2 * batchsize * latent_width * latent_height
         inference_memory = (((area * 0.6) / 0.9) + 1024) * (1024 * 1024)
         memory_management.load_models_gpu(

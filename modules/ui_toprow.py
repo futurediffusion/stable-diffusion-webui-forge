@@ -30,6 +30,7 @@ class Toprow:
     token_button = None
     negative_token_counter = None
     negative_token_button = None
+    model_cache_status = None
 
     ui_styles = None
 
@@ -131,6 +132,7 @@ class Toprow:
             self.token_button = gr.Button(visible=False, elem_id=f"{self.id_part}_token_button")
             self.negative_token_counter = gr.HTML(value="<span>0/75</span>", elem_id=f"{self.id_part}_negative_token_counter", elem_classes=["token-counter"], visible=False)
             self.negative_token_button = gr.Button(visible=False, elem_id=f"{self.id_part}_negative_token_button")
+            self.model_cache_status = gr.HTML("", elem_id=f"{self.id_part}_model_cache_status")
 
             self.clear_prompt_button.click(
                 fn=lambda *x: x,
