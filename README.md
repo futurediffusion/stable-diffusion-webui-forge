@@ -208,6 +208,19 @@ class FreeUForForge(scripts.Script):
 
 See also [Forge's Unet Implementation](https://github.com/lllyasviel/stable-diffusion-webui-forge/blob/main/backend/nn/unet.py).
 
+# Internationalization
+
+Forge can display the interface in multiple languages. Translation files are loaded from the
+`localizations/` directory on startup. Each file should be a JSON map of English text to its
+translation. A sample Spanish translation is included as `localizations/es.json`.
+
+If the `WEBUI_LANG` or system `LANG` environment variable matches an available language name
+(for example `es`), that localization will be selected automatically at launch. The language can
+also be changed later in **Settings → User interface → Localization**.
+
+To create your own translation open the Settings tab and click **Download localization template**,
+translate the resulting file and place it under `localizations/`.
+
 # Under Construction
 
 WebUI Forge is now under some constructions, and docs / UI / functionality may change with updates.

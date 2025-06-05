@@ -96,9 +96,12 @@ def initialize_rest(*, reload_script_modules=False):
     sd_models.list_models()
     startup_timer.record("list SD models")
 
-    from modules import localization
+    from modules import localization, shared
     localization.list_localizations(cmd_opts.localizations_dir)
     startup_timer.record("list localizations")
+    detected_loc = localization.detect_default_localization()
+    if shared.opts.localization == "None" and detected_loc != "None":
+        shared.opts.localization = detected_loc
 
     with startup_timer.subcategory("load scripts"):
         scripts.load_scripts()

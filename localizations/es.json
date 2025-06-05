@@ -1,0 +1,20 @@
+{
+    "Txt2img": "Texto a Imagen",
+    "Img2img": "Imagen a Imagen",
+    "Spaces": "Espacios",
+    "Extras": "Extras",
+    "PNG Info": "Información PNG",
+    "Checkpoint Merger": "Combinador de Checkpoints",
+    "Settings": "Configuración",
+    "Extensions": "Extensiones",
+    "Generate": "Generar",
+    "Interrupt": "Interrumpir",
+    "Skip": "Saltar",
+    "Interrupting...": "Interrumpiendo...",
+    "Open for Settings": "Abrir Configuraciones",
+    "Width": "Ancho",
+    "Height": "Alto",
+    "Batch count": "Conteo de lotes",
+    "Batch size": "Tamaño de lote",
+    "CFG Scale": "Escala CFG"
+}
