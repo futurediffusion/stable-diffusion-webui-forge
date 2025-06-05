@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def bgr_image_to_rgb_tensor(img: np.ndarray) -> torch.Tensor:
     """Convert a BGR NumPy image in [0..1] range to a PyTorch RGB float32 tensor."""
-    assert img.shape[2] == 3, "image must be RGB"
+    assert img.shape[2] == 3, "image must be BGR"
     if img.dtype == "float64":
         img = img.astype("float32")
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
