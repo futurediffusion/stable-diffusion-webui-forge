@@ -12,7 +12,11 @@ from backend.patcher.lora import model_lora_keys_unet
 
 
 def is_model_loaded(model):
-    return any(model == m.model for m in current_loaded_models)
+    for models in current_loaded_models.values():
+        for m in models:
+            if model == m.model:
+                return True
+    return False
 
 
 class InpaintHead(torch.nn.Module):

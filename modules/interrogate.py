@@ -137,7 +137,10 @@ class InterrogateModels:
             self.clip_model = self.clip_model.to(device=self.offload_device, dtype=self.dtype)
             self.clip_patcher = ModelPatcher(self.clip_model, load_device=self.load_device, offload_device=self.offload_device)
 
-        memory_management.load_models_gpu([self.blip_patcher, self.clip_patcher])
+        memory_management.load_models_gpu([
+            self.blip_patcher,
+            self.clip_patcher
+        ], device=self.load_device)
         return
 
     def send_clip_to_ram(self):

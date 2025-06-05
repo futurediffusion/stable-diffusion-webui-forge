@@ -100,6 +100,11 @@ def get_torch_device():
             return torch.device(torch.cuda.current_device())
 
 
+def available_devices():
+    """Return a list of all detected CUDA devices."""
+    return [torch.device(f"cuda:{i}") for i in range(torch.cuda.device_count())]
+
+
 def get_total_memory(dev=None, torch_total_too=False):
     global directml_enabled
     if dev is None:
@@ -285,7 +290,23 @@ if 'rtx' in torch_device_name.lower():
         print('Hint: your device supports --cuda-malloc for potential speed improvements.')
 
 
-current_loaded_models = []
+from collections import defaultdict
+
+# Mapping from torch device to list of LoadedModel objects on that device
+current_loaded_models = defaultdict(list)
+
+def _all_loaded_models():
+    for models in current_loaded_models.values():
+        for m in list(models):
+            yield m
+
+def _find_loaded_model(target):
+    for dev, models in current_loaded_models.items():
+        for idx, m in enumerate(models):
+            if target == m:
+                return dev, idx
+    return None, None
+
 
 
 def state_dict_size(sd, exclude_device=None):
@@ -551,19 +572,27 @@ def minimum_inference_memory():
 
 def unload_model_clones(model):
     to_unload = []
-    for i in range(len(current_loaded_models)):
-        if model.is_clone(current_loaded_models[i].model):
-            to_unload = [i] + to_unload
+    for dev, models in current_loaded_models.items():
+        for m in list(models):
+            if model.is_clone(m.model):
+                to_unload.append((dev, m))
 
-    for i in to_unload:
-        current_loaded_models.pop(i).model_unload(avoid_model_moving=True)
+    for dev, lm in to_unload:
+        current_loaded_models[dev].remove(lm)
+        lm.model_unload(avoid_model_moving=True)
+        if not current_loaded_models[dev]:
+            del current_loaded_models[dev]
 
 
 def free_memory(memory_required, device, keep_loaded=[], free_all=False):
     # this check fully unloads any 'abandoned' models
-    for i in range(len(current_loaded_models) - 1, -1, -1):
-        if sys.getrefcount(current_loaded_models[i].model) <= 2:
-            current_loaded_models.pop(i).model_unload(avoid_model_moving=True)
+    for dev, models in list(current_loaded_models.items()):
+        for m in list(models):
+            if sys.getrefcount(m.model) <= 2:
+                models.remove(m)
+                m.model_unload(avoid_model_moving=True)
+        if not models:
+            del current_loaded_models[dev]
 
     if free_all:
         memory_required = 1e30
@@ -573,20 +602,21 @@ def free_memory(memory_required, device, keep_loaded=[], free_all=False):
 
     offload_everything = ALWAYS_VRAM_OFFLOAD or vram_state == VRAMState.NO_VRAM
     unloaded_model = False
-    for i in range(len(current_loaded_models) - 1, -1, -1):
+    device_models = current_loaded_models.get(device, [])
+    for m in list(device_models):
         if not offload_everything:
-            free_memory = get_free_memory(device)
-            print(f"Current free memory is {free_memory / (1024 * 1024):.2f} MB ... ", end="")
-            if free_memory > memory_required:
+            free_mem = get_free_memory(device)
+            print(f"Current free memory is {free_mem / (1024 * 1024):.2f} MB ... ", end="")
+            if free_mem > memory_required:
                 break
-        shift_model = current_loaded_models[i]
-        if shift_model.device == device:
-            if shift_model not in keep_loaded:
-                m = current_loaded_models.pop(i)
-                print(f"Unload model {m.model.model.__class__.__name__} ", end="")
-                m.model_unload()
-                del m
-                unloaded_model = True
+        if m not in keep_loaded:
+            device_models.remove(m)
+            print(f"Unload model {m.model.model.__class__.__name__} ", end="")
+            m.model_unload()
+            del m
+            unloaded_model = True
+    if not device_models and device in current_loaded_models:
+        del current_loaded_models[device]
 
     if unloaded_model:
         soft_empty_cache()
@@ -611,8 +641,18 @@ def compute_model_gpu_memory_when_using_cpu_swap(current_free_mem, inference_mem
     return int(max(0, suggestion))
 
 
-def load_models_gpu(models, memory_required=0, hard_memory_preservation=0):
+def load_models_gpu(models, device=None, memory_required=0, hard_memory_preservation=0):
     global vram_state
+
+    if device is None:
+        gpus = available_devices()
+        if len(gpus) > 0:
+            device = max(gpus, key=lambda d: get_free_memory(d))
+        else:
+            device = get_torch_device()
+
+    for m in models:
+        m.load_device = device
 
     execution_start_time = time.perf_counter()
     memory_to_free = max(minimum_inference_memory(), memory_required) + hard_memory_preservation
@@ -623,9 +663,10 @@ def load_models_gpu(models, memory_required=0, hard_memory_preservation=0):
     for x in models:
         loaded_model = LoadedModel(x)
 
-        if loaded_model in current_loaded_models:
-            index = current_loaded_models.index(loaded_model)
-            current_loaded_models.insert(0, current_loaded_models.pop(index))
+        dev, idx = _find_loaded_model(loaded_model)
+        if dev is not None:
+            lst = current_loaded_models[dev]
+            lst.insert(0, lst.pop(idx))
             models_already_loaded.append(loaded_model)
         else:
             models_to_load.append(loaded_model)
@@ -682,7 +723,7 @@ def load_models_gpu(models, memory_required=0, hard_memory_preservation=0):
             model_gpu_memory_when_using_cpu_swap = 0
 
         loaded_model.model_load(model_gpu_memory_when_using_cpu_swap)
-        current_loaded_models.insert(0, loaded_model)
+        current_loaded_models[loaded_model.device].insert(0, loaded_model)
 
     moving_time = time.perf_counter() - execution_start_time
     print(f'Moving model(s) has taken {moving_time:.2f} seconds')
@@ -690,20 +731,18 @@ def load_models_gpu(models, memory_required=0, hard_memory_preservation=0):
     return
 
 
-def load_model_gpu(model):
-    return load_models_gpu([model])
+def load_model_gpu(model, device=None):
+    return load_models_gpu([model], device=device)
 
 
 def cleanup_models():
-    to_delete = []
-    for i in range(len(current_loaded_models)):
-        if sys.getrefcount(current_loaded_models[i].model) <= 2:
-            to_delete = [i] + to_delete
-
-    for i in to_delete:
-        x = current_loaded_models.pop(i)
-        x.model_unload()
-        del x
+    for dev, models in list(current_loaded_models.items()):
+        for m in list(models):
+            if sys.getrefcount(m.model) <= 2:
+                models.remove(m)
+                m.model_unload()
+        if not models:
+            del current_loaded_models[dev]
 
 
 def dtype_size(dtype):

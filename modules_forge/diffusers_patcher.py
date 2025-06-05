@@ -42,6 +42,7 @@ class DiffusersModelPatcher:
         inference_memory = (((area * 0.6) / 0.9) + 1024) * (1024 * 1024)
         memory_management.load_models_gpu(
             models=[self.patcher],
+            device=self.patcher.load_device,
             memory_required=inference_memory
         )
 
