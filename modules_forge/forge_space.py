@@ -10,9 +10,11 @@ from gradio.context import Context
 from threading import Thread
 from huggingface_hub import snapshot_download
 from backend import memory_management
+from modules_forge import memory_monitor
 
 
 spaces = []
+memory_state = None
 
 
 def build_html(title, installed=False, url=None):
@@ -228,7 +230,10 @@ class ForgeSpace:
 
 
 def main_entry():
-    global spaces
+    global spaces, memory_state
+
+    if memory_state is None:
+        memory_state = memory_monitor.start(2)
 
     from modules.extensions import extensions
 
@@ -249,5 +254,31 @@ def main_entry():
                 with gr.Row(equal_height=True):
                     space = ForgeSpace(root_path=ex.path, **ex.space_meta)
                     spaces.append(space)
+
+    with gr.Accordion("Memory Monitor", open=False):
+        mem_display = gr.Markdown()
+
+        def _format_metrics():
+            m = memory_state.value if isinstance(memory_state, gr.State) else memory_monitor.get_metrics()
+            if not m:
+                return "Collecting metrics..."
+
+            def fmt(b):
+                return f"{b // (1024 * 1024)} MB"
+
+            return (
+                f"CPU: {m['cpu_percent']:.1f}%\n"
+                f"RAM: {fmt(m['ram_used'])} / {fmt(m['ram_total'])}\n"
+                f"GPU: {fmt(m['gpu_allocated'])}"
+            )
+
+        Context.root_block.load(
+            _format_metrics,
+            inputs=None,
+            outputs=[mem_display],
+            every=memory_monitor.monitor.interval,
+            queue=False,
+            show_progress=False,
+        )
 
     return
