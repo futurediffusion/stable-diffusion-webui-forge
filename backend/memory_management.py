@@ -56,19 +56,19 @@ if args.directml is not None:
     print("Using directml with device: {}".format(torch_directml.device_name(device_index)))
 
 try:
-    import intel_extension_for_pytorch as ipex
+    import intel_extension_for_pytorch as ipex  # noqa: F401
 
     if torch.xpu.is_available():
         xpu_available = True
-except:
-    pass
+except Exception as exc:
+    print(f"intel_extension_for_pytorch not available: {exc}")
 
 try:
     if torch.backends.mps.is_available():
         cpu_state = CPUState.MPS
         import torch.mps
-except:
-    pass
+except Exception as exc:
+    print(f"MPS backend not available: {exc}")
 
 if args.always_cpu:
     cpu_state = CPUState.CPU
@@ -136,12 +136,12 @@ print("Total VRAM {:0.0f} MB, total RAM {:0.0f} MB".format(total_vram, total_ram
 
 try:
     print("pytorch version: {}".format(torch.version.__version__))
-except:
-    pass
+except Exception as exc:
+    print(f"Could not determine PyTorch version: {exc}")
 
 try:
     OOM_EXCEPTION = torch.cuda.OutOfMemoryError
-except:
+except AttributeError:
     OOM_EXCEPTION = Exception
 
 if directml_enabled:
@@ -159,8 +159,8 @@ else:
         XFORMERS_IS_AVAILABLE = True
         try:
             XFORMERS_IS_AVAILABLE = xformers._has_cpp_library
-        except:
-            pass
+        except Exception as exc:
+            print(f"Failed to query xformers C++ library: {exc}")
         try:
             XFORMERS_VERSION = xformers.version.__version__
             print("xformers version: {}".format(XFORMERS_VERSION))
@@ -168,10 +168,11 @@ else:
                 print("\nWARNING: This version of xformers has a major bug where you will get black images when generating high resolution images.")
                 print("Please downgrade or upgrade xformers to a different version.\n")
                 XFORMERS_ENABLED_VAE = False
-        except:
-            pass
-    except:
+        except Exception as exc:
+            print(f"Could not get xformers version: {exc}")
+    except Exception as exc:
         XFORMERS_IS_AVAILABLE = False
+        print(f"xformers not available: {exc}")
 
 
 def is_nvidia():
@@ -200,8 +201,8 @@ try:
     if is_intel_xpu():
         if args.attention_split == False and args.attention_quad == False:
             ENABLE_PYTORCH_ATTENTION = True
-except:
-    pass
+except Exception as exc:
+    print(f"Could not configure PyTorch attention: {exc}")
 
 if is_intel_xpu():
     VAE_DTYPES = [torch.bfloat16] + VAE_DTYPES
@@ -262,7 +263,7 @@ def get_torch_device_name(device):
         if device.type == "cuda":
             try:
                 allocator_backend = torch.cuda.get_allocator_backend()
-            except:
+            except Exception:
                 allocator_backend = ""
             return "{} {} : {}".format(device, torch.cuda.get_device_name(device), allocator_backend)
         else:
@@ -276,9 +277,9 @@ def get_torch_device_name(device):
 try:
     torch_device_name = get_torch_device_name(get_torch_device())
     print("Device: {}".format(torch_device_name))
-except:
+except Exception as exc:
     torch_device_name = ''
-    print("Could not pick default device.")
+    print(f"Could not pick default device: {exc}")
 
 if 'rtx' in torch_device_name.lower():
     if not args.cuda_malloc:
@@ -715,7 +716,8 @@ def dtype_size(dtype):
     else:
         try:
             dtype_size = dtype.itemsize
-        except:  # Old pytorch doesn't have .itemsize
+        except AttributeError:
+            # Old pytorch doesn't have .itemsize
             pass
     return dtype_size
 
@@ -997,8 +999,8 @@ def force_upcast_attention_dtype():
     try:
         if platform.mac_ver()[0] in ['14.5']:  # black image bug on OSX Sonoma 14.5
             upcast = True
-    except:
-        pass
+    except Exception as exc:
+        print(f"Failed to detect macOS version: {exc}")
     if upcast:
         return torch.float32
     else:
@@ -1184,7 +1186,8 @@ def can_install_bnb():
             return True
 
         return False
-    except:
+    except Exception as exc:
+        print(f"Could not determine if bitsandbytes can be installed: {exc}")
         return False
 
 
