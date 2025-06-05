@@ -90,4 +90,21 @@ def patch_all_basics():
     gradio.networking.url_ok = gradio_url_ok_fix
     build_loaded(safetensors.torch, 'load_file')
     build_loaded(torch, 'load')
+
+    try:
+        from gradio_client import utils as client_utils
+
+        if not hasattr(client_utils, "_forge_patch_applied"):
+            original_get_type = client_utils.get_type
+
+            def get_type(schema: dict):  # type: ignore[override]
+                if not isinstance(schema, dict):
+                    return {}
+                return original_get_type(schema)
+
+            client_utils.get_type = get_type
+            client_utils._forge_patch_applied = True
+    except Exception as e:  # pragma: no cover - optional
+        print(f"Failed to patch gradio_client.utils.get_type: {e}")
+
     return
