@@ -212,3 +212,17 @@ function uiElementInSight(el) {
 
     return isOnScreen;
 }
+
+function requestModelCacheStatus(el) {
+    if (!el) return;
+    fetch('./internal/model-cache-status')
+        .then(res => res.json())
+        .then(data => { el.innerHTML = data.status || ''; })
+        .catch(() => {})
+        .finally(() => { setTimeout(() => requestModelCacheStatus(el), 2000); });
+}
+
+onUiLoaded(function(){
+    requestModelCacheStatus(gradioApp().querySelector('#txt2img_model_cache_status'));
+    requestModelCacheStatus(gradioApp().querySelector('#img2img_model_cache_status'));
+});
