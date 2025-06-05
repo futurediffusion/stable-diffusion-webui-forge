@@ -307,6 +307,7 @@ def create_ui():
 
         dummy_component = gr.Textbox(visible=False)
         dummy_component_number = gr.Number(visible=False)
+        styles_dropdown = toprow.ui_styles.dropdown if toprow.ui_styles else gr.Dropdown(visible=False, multiselect=True)
 
         extra_tabs = gr.Tabs(elem_id="txt2img_extra_tabs", elem_classes=["extra-networks"])
         extra_tabs.__enter__()
@@ -447,7 +448,7 @@ def create_ui():
                 dummy_component,
                 toprow.prompt,
                 toprow.negative_prompt,
-                toprow.ui_styles.dropdown,
+                styles_dropdown,
                 batch_count,
                 batch_size,
                 cfg_scale,
@@ -528,7 +529,7 @@ def create_ui():
                 PasteField(width, "Size-1", api="width"),
                 PasteField(height, "Size-2", api="height"),
                 PasteField(batch_size, "Batch size", api="batch_size"),
-                PasteField(toprow.ui_styles.dropdown, lambda d: d["Styles array"] if isinstance(d.get("Styles array"), list) else gr.update(), api="styles"),
+                PasteField(styles_dropdown, lambda d: d["Styles array"] if isinstance(d.get("Styles array"), list) else gr.update(), api="styles"),
                 PasteField(denoising_strength, "Denoising strength", api="denoising_strength"),
                 PasteField(enable_hr, lambda d: "Denoising strength" in d and ("Hires upscale" in d or "Hires upscaler" in d or "Hires resize-1" in d), api="enable_hr"),
                 PasteField(hr_scale, "Hires upscale", api="hr_scale"),
@@ -555,10 +556,11 @@ def create_ui():
 
             steps = scripts.scripts_txt2img.script('Sampler').steps
 
-            toprow.ui_styles.dropdown.change(fn=wrap_queued_call(update_token_counter), inputs=[toprow.prompt, steps, toprow.ui_styles.dropdown], outputs=[toprow.token_counter])
-            toprow.ui_styles.dropdown.change(fn=wrap_queued_call(update_negative_prompt_token_counter), inputs=[toprow.negative_prompt, steps, toprow.ui_styles.dropdown], outputs=[toprow.negative_token_counter])
-            toprow.token_button.click(fn=wrap_queued_call(update_token_counter), inputs=[toprow.prompt, steps, toprow.ui_styles.dropdown], outputs=[toprow.token_counter])
-            toprow.negative_token_button.click(fn=wrap_queued_call(update_negative_prompt_token_counter), inputs=[toprow.negative_prompt, steps, toprow.ui_styles.dropdown], outputs=[toprow.negative_token_counter])
+            if toprow.ui_styles:
+                styles_dropdown.change(fn=wrap_queued_call(update_token_counter), inputs=[toprow.prompt, steps, styles_dropdown], outputs=[toprow.token_counter])
+                styles_dropdown.change(fn=wrap_queued_call(update_negative_prompt_token_counter), inputs=[toprow.negative_prompt, steps, styles_dropdown], outputs=[toprow.negative_token_counter])
+                toprow.token_button.click(fn=wrap_queued_call(update_token_counter), inputs=[toprow.prompt, steps, styles_dropdown], outputs=[toprow.token_counter])
+                toprow.negative_token_button.click(fn=wrap_queued_call(update_negative_prompt_token_counter), inputs=[toprow.negative_prompt, steps, styles_dropdown], outputs=[toprow.negative_token_counter])
 
         extra_networks_ui = ui_extra_networks.create_ui(txt2img_interface, [txt2img_generation_tab], 'txt2img')
         ui_extra_networks.setup_ui(extra_networks_ui, output_panel.gallery)
@@ -570,6 +572,8 @@ def create_ui():
 
     with gr.Blocks(analytics_enabled=False, head=canvas_head) as img2img_interface:
         toprow = ui_toprow.Toprow(is_img2img=True, is_compact=shared.opts.compact_prompt_box)
+
+        styles_dropdown = toprow.ui_styles.dropdown if toprow.ui_styles else gr.Dropdown(visible=False, multiselect=True)
 
         extra_tabs = gr.Tabs(elem_id="img2img_extra_tabs", elem_classes=["extra-networks"])
         extra_tabs.__enter__()
@@ -798,7 +802,7 @@ def create_ui():
                 img2img_selected_tab,
                 toprow.prompt,
                 toprow.negative_prompt,
-                toprow.ui_styles.dropdown,
+                styles_dropdown,
                 init_img.background,
                 sketch.background,
                 sketch.foreground,
@@ -902,10 +906,11 @@ def create_ui():
 
             steps = scripts.scripts_img2img.script('Sampler').steps
 
-            toprow.ui_styles.dropdown.change(fn=wrap_queued_call(update_token_counter), inputs=[toprow.prompt, steps, toprow.ui_styles.dropdown], outputs=[toprow.token_counter])
-            toprow.ui_styles.dropdown.change(fn=wrap_queued_call(update_negative_prompt_token_counter), inputs=[toprow.negative_prompt, steps, toprow.ui_styles.dropdown], outputs=[toprow.negative_token_counter])
-            toprow.token_button.click(fn=update_token_counter, inputs=[toprow.prompt, steps, toprow.ui_styles.dropdown], outputs=[toprow.token_counter])
-            toprow.negative_token_button.click(fn=wrap_queued_call(update_negative_prompt_token_counter), inputs=[toprow.negative_prompt, steps, toprow.ui_styles.dropdown], outputs=[toprow.negative_token_counter])
+            if toprow.ui_styles:
+                styles_dropdown.change(fn=wrap_queued_call(update_token_counter), inputs=[toprow.prompt, steps, styles_dropdown], outputs=[toprow.token_counter])
+                styles_dropdown.change(fn=wrap_queued_call(update_negative_prompt_token_counter), inputs=[toprow.negative_prompt, steps, styles_dropdown], outputs=[toprow.negative_token_counter])
+                toprow.token_button.click(fn=update_token_counter, inputs=[toprow.prompt, steps, styles_dropdown], outputs=[toprow.token_counter])
+                toprow.negative_token_button.click(fn=wrap_queued_call(update_negative_prompt_token_counter), inputs=[toprow.negative_prompt, steps, styles_dropdown], outputs=[toprow.negative_token_counter])
 
             img2img_paste_fields = [
                 (toprow.prompt, "Prompt"),
@@ -916,7 +921,7 @@ def create_ui():
                 (width, "Size-1"),
                 (height, "Size-2"),
                 (batch_size, "Batch size"),
-                (toprow.ui_styles.dropdown, lambda d: d["Styles array"] if isinstance(d.get("Styles array"), list) else gr.update()),
+                (styles_dropdown, lambda d: d["Styles array"] if isinstance(d.get("Styles array"), list) else gr.update()),
                 (denoising_strength, "Denoising strength"),
                 (mask_blur, "Mask blur"),
                 (inpainting_mask_invert, 'Mask mode'),
