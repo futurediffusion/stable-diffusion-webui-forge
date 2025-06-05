@@ -254,7 +254,22 @@ def ordered_ui_categories():
     categories = list(shared_items.ui_reorder_categories())
 
     if shared.opts.simple_ui_mode:
-        simple_list = ["prompt", "image", "sampler", "dimensions", "cfg", "seed", "batch"]
+        # simple UI must still include all categories required by the
+        # interface to avoid missing variable errors
+        simple_list = [
+            "prompt",
+            "image",
+            "inpaint",
+            "sampler",
+            "accordions",
+            "dimensions",
+            "cfg",
+            "denoising",
+            "seed",
+            "batch",
+            "override_settings",
+            "scripts",
+        ]
         categories = [c for c in categories if c in simple_list]
 
     for _, category in sorted(enumerate(categories), key=lambda x: user_order.get(x[1], x[0] * 2 + 0)):
