@@ -30,7 +30,6 @@ News are moved to this link: [Click here to see the News section](https://github
 
 [Tell us what is missing in ControlNet Integrated](https://github.com/lllyasviel/stable-diffusion-webui-forge/discussions/932)
 
-Simple UI mode toggle available in **Settings > UI alternatives** for a Foocus-like minimal interface.
 
 [(Policy) Soft Advertisement Removal Policy](https://github.com/lllyasviel/stable-diffusion-webui-forge/discussions/1286)
 

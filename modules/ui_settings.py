@@ -297,6 +297,23 @@ class UiSettings:
 
     def add_quicksettings(self):
         with gr.Row(elem_id="quicksettings", variant="compact") as quicksettings_row:
+            def toggle_simple_ui():
+                shared.opts.simple_ui_mode = not shared.opts.simple_ui_mode
+                shared.opts.save(shared.config_filename)
+                shared.state.request_restart()
+                return "Normal UI" if shared.opts.simple_ui_mode else "Simple UI"
+
+            simple_ui_btn = gr.Button(
+                value="Simple UI" if not shared.opts.simple_ui_mode else "Normal UI",
+                elem_id="toggle_simple_ui",
+            )
+            simple_ui_btn.click(
+                fn=toggle_simple_ui,
+                inputs=[],
+                outputs=[simple_ui_btn],
+                _js="restart_reload",
+            )
+
             main_entry.make_checkpoint_manager_ui()
             for _i, k, _item in sorted(self.quicksettings_list, key=lambda x: self.quicksettings_names.get(x[1], x[0])):
                 component = create_setting_component(k, is_quicksettings=True)
