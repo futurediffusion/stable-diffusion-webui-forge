@@ -58,7 +58,8 @@ class Toprow:
 
             self.create_tools_row()
 
-            self.create_styles_ui()
+            if not shared.opts.simple_ui_mode:
+                self.create_styles_ui()
 
     def create_inline_toprow_prompts(self):
         if not self.is_compact:
@@ -69,8 +70,9 @@ class Toprow:
         with gr.Row(elem_classes=["toprow-compact-stylerow"]):
             with gr.Column(elem_classes=["toprow-compact-tools"]):
                 self.create_tools_row()
-            with gr.Column():
-                self.create_styles_ui()
+            if not shared.opts.simple_ui_mode:
+                with gr.Column():
+                    self.create_styles_ui()
 
     def create_inline_toprow_image(self):
         if not self.is_compact:
