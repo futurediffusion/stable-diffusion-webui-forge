@@ -1703,3 +1703,7 @@ body.resizing .resize-handle {
 .forge_space_btn{
     min-width: 0 !important;
 }
+
+#txt2img_download_button{
+    width: 100%;
+}
