@@ -16,6 +16,7 @@ from modules import gradio_extensions, sd_schedulers  # noqa: F401
 from modules import sd_hijack, sd_models, script_callbacks, ui_extensions, deepbooru, extra_networks, ui_common, ui_postprocessing, progress, ui_loadsave, shared_items, ui_settings, timer, sysinfo, ui_checkpoint_merger, scripts, sd_samplers, processing, ui_extra_networks, ui_toprow, launch_utils
 from modules.ui_components import FormRow, FormGroup, ToolButton, FormHTML, InputAccordion, ResizeHandleRow
 from modules.paths import script_path
+from modules.paths_internal import default_output_dir
 from modules.ui_common import create_refresh_button
 from modules.ui_gradio_extensions import reload_javascript
 
@@ -288,6 +289,21 @@ def create_override_settings_dropdown(tabname, row):
     return dropdown
 
 
+def get_latest_output_image():
+    search_dir = shared.opts.outdir_samples or default_output_dir
+    latest_file = None
+    latest_mtime = -1
+    for root, _dirs, files in os.walk(search_dir):
+        for f in files:
+            if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+                path = os.path.join(root, f)
+                mtime = os.path.getmtime(path)
+                if mtime > latest_mtime:
+                    latest_mtime = mtime
+                    latest_file = path
+    return gr.File.update(value=latest_file, visible=True) if latest_file else gr.File.update(visible=False)
+
+
 def create_ui():
     import modules.img2img
     import modules.txt2img
@@ -363,6 +379,11 @@ def create_ui():
                                     hr_scale = gr.Slider(minimum=1.0, maximum=4.0, step=0.05, label="Upscale by", value=2.0, elem_id="txt2img_hr_scale")
                                     hr_resize_x = gr.Slider(minimum=0, maximum=2048, step=8, label="Resize width to", value=0, elem_id="txt2img_hr_resize_x")
                                     hr_resize_y = gr.Slider(minimum=0, maximum=2048, step=8, label="Resize height to", value=0, elem_id="txt2img_hr_resize_y")
+
+                                with FormRow(elem_id="txt2img_download_row", variant="compact"):
+                                    download_button = gr.Button("Descargar \u2b07\ufe0f", elem_id="txt2img_download_button")
+                                    download_file = gr.File(visible=False, interactive=False, elem_id="txt2img_download_file")
+                                    download_button.click(fn=get_latest_output_image, inputs=[], outputs=[download_file], show_progress=False)
 
                                 with FormRow(elem_id="txt2img_hires_fix_row_cfg", variant="compact"):
                                     hr_distilled_cfg = gr.Slider(minimum=0.0, maximum=30.0, step=0.1, label="Hires Distilled CFG Scale", value=3.5, elem_id="txt2img_hr_distilled_cfg")
